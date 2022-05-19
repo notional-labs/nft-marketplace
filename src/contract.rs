@@ -14,7 +14,7 @@ use cw721::{Cw721ExecuteMsg, Cw721ReceiveMsg};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SellNft};
-use crate::package::{ContractInfoResponse, OfferingsResponse, QueryOfferingsResult};
+use crate::package::{ContractInfoResponse, OfferingsResponse, QueryOfferingResponse};
 use crate::state::{increment_offerings, Offering, CONTRACT_INFO, OFFERINGS};
 
 // version info for migration info
@@ -272,6 +272,9 @@ pub fn execute_update_price(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
+        QueryMsg::GetOfferingById { offering_id } => {
+            to_binary(&query_offering_by_id(deps, offering_id)?)
+        }
         QueryMsg::GetOfferings { sort_listing } => {
             to_binary(&query_offerings(deps, &sort_listing)?)
         }
@@ -300,8 +303,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+fn query_offering_by_id(deps: Deps, offering_id: String) -> StdResult<QueryOfferingResponse> {
+    let offering = OFFERINGS.load(deps.storage, &offering_id)?;
+    Ok(QueryOfferingResponse {
+        id: offering_id,
+        token_id: offering.token_id,
+        list_price: offering.list_price,
+        royalty_info: offering.royalty_info,
+        contract_addr: offering.contract_addr.into_string(),
+        seller: offering.seller.into_string(),
+        listing_time: offering.listing_time,
+    })
+}
+
 fn query_offerings(deps: Deps, sort_listing: &str) -> StdResult<OfferingsResponse> {
-    let res: StdResult<Vec<QueryOfferingsResult>> = OFFERINGS
+    let res: StdResult<Vec<QueryOfferingResponse>> = OFFERINGS
         .range_raw(deps.storage, None, None, Order::Ascending)
         .map(|kv_item| parse_offering(deps.api, kv_item))
         .collect();
@@ -395,7 +411,7 @@ fn query_offerings_by_price_range(
     max: Uint128,
     sort_listing: &str,
 ) -> StdResult<OfferingsResponse> {
-    let res: StdResult<Vec<QueryOfferingsResult>> = OFFERINGS
+    let res: StdResult<Vec<QueryOfferingResponse>> = OFFERINGS
         .range_raw(deps.storage, None, None, Order::Ascending)
         .map(|kv_item| parse_offering(deps.api, kv_item))
         .collect();
@@ -408,7 +424,7 @@ fn query_offerings_by_price_range(
         });
     }
 
-    let mut result: Vec<QueryOfferingsResult> = offerings_clone
+    let mut result: Vec<QueryOfferingResponse> = offerings_clone
         .into_iter()
         .filter(|x| x.list_price >= min && x.list_price <= max)
         .collect();
@@ -492,7 +508,7 @@ fn query_offerings_of_collection(
     contract_addr: &str,
     sort_listing: &str,
 ) -> StdResult<OfferingsResponse> {
-    let res: StdResult<Vec<QueryOfferingsResult>> = OFFERINGS
+    let res: StdResult<Vec<QueryOfferingResponse>> = OFFERINGS
         .range_raw(deps.storage, None, None, Order::Ascending)
         .map(|kv_item| parse_offering(deps.api, kv_item))
         .collect();
@@ -505,7 +521,7 @@ fn query_offerings_of_collection(
         });
     }
 
-    let mut result: Vec<QueryOfferingsResult> = offerings_clone
+    let mut result: Vec<QueryOfferingResponse> = offerings_clone
         .into_iter()
         .filter(|x| x.contract_addr == contract_addr)
         .collect();
@@ -589,7 +605,7 @@ fn query_offerings_of_seller(
     seller: &str,
     sort_listing: &str,
 ) -> StdResult<OfferingsResponse> {
-    let res: StdResult<Vec<QueryOfferingsResult>> = OFFERINGS
+    let res: StdResult<Vec<QueryOfferingResponse>> = OFFERINGS
         .range_raw(deps.storage, None, None, Order::Ascending)
         .map(|kv_item| parse_offering(deps.api, kv_item))
         .collect();
@@ -602,7 +618,7 @@ fn query_offerings_of_seller(
         });
     }
 
-    let mut result: Vec<QueryOfferingsResult> = offerings_clone
+    let mut result: Vec<QueryOfferingResponse> = offerings_clone
         .into_iter()
         .filter(|x| x.seller == seller)
         .collect();
@@ -684,10 +700,10 @@ fn query_offerings_of_seller(
 fn parse_offering(
     _api: &dyn Api,
     item: StdResult<Record<Offering>>,
-) -> StdResult<QueryOfferingsResult> {
+) -> StdResult<QueryOfferingResponse> {
     item.and_then(|(k, offering)| {
         let id = from_utf8(&k)?;
-        Ok(QueryOfferingsResult {
+        Ok(QueryOfferingResponse {
             id: id.to_string(),
             token_id: offering.token_id,
             list_price: offering.list_price,

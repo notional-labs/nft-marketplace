@@ -34,6 +34,10 @@ pub struct BuyNft {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
+    GetOfferingById {
+        offering_id: String
+    },
+    
     GetOfferings {
         sort_listing: String
     },

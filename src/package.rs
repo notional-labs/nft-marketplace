@@ -9,7 +9,7 @@ pub struct ContractInfoResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct QueryOfferingsResult {
+pub struct QueryOfferingResponse {
     pub id: String,
     pub token_id: String,
     pub list_price: Uint128,
@@ -21,5 +21,6 @@ pub struct QueryOfferingsResult {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct OfferingsResponse {
-    pub offerings: Vec<QueryOfferingsResult>,
+    pub offerings: Vec<QueryOfferingResponse>,
 }
+
