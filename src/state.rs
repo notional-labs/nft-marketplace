@@ -17,6 +17,13 @@ pub struct Offering {
     pub listing_time: Timestamp,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SaleType {
+    FixedPrice,
+    Auction,
+}
+
 pub const OFFERINGS: Map<&str, Offering> = Map::new("offerings");
 pub const OFFERINGS_COUNT: Item<u64> = Item::new("num_offerings");
 pub const CONTRACT_INFO: Item<ContractInfoResponse> = Item::new("marketplace_info");
